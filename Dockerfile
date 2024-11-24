@@ -4,7 +4,8 @@ LABEL authors="sebas"
 
 WORKDIR /app
 
-COPY build/libs/*.jar app.jar
+COPY *.jar app.jar
+
 
 EXPOSE 8082
 
