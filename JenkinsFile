@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Clone and Checkout Latest Commit') {
             steps {
-                git branch: 'develop', url: 'https://github.com/Jd1ego/NotificacionesMicroS'
+                git branch: 'main', url: 'https://github.com/Jd1ego/NotificacionesMicroS'
                 sh 'git fetch --all'
                 sh 'git reset --hard origin/main'
             }
@@ -26,56 +26,35 @@ pipeline {
 
         stage('Set Permissions') {
             steps {
-                
-                    sh 'chmod +x gradlew'
-                
+                sh 'chmod +x gradlew'
             }
         }
 
         stage('Run Tests') {
             steps {
-                
-                    sh './gradlew test'
-                
+                sh './gradlew test'
             }
         }
 
         stage('Generate JaCoCo Report') {
             steps {
-                
-                    sh './gradlew jacocoTestReport'
-                
+                sh './gradlew jacocoTestReport'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('Sonarqube') {
-                    
-                        sh './gradlew sonarqube -Dsonar.login=squ_03fbd8f33a42c91fe9fe31f18470bcb7fdda181c'
-                    
+                    sh './gradlew sonarqube -Dsonar.login=squ_03fbd8f33a42c91fe9fe31f18470bcb7fdda181c'
                 }
             }
         }
-
-        /*
-        stage('Sonar Quality Gate') {
-            steps {
-                script {
-                    def qualityGateResult = waitForQualityGate()
-                    if (qualityGateResult.status != 'OK') {
-                        error "Quality Gate failed: ${qualityGateResult.status}"
-                    }
-                }
-            }
-        }
-        */
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    def dockerImageTag = "jsebas656/Microservicio-Notificaciones:latest" 
-                    sh "docker build -t ${dockerImageTag} -f "
+                    def dockerImageTag = "jsebas656/Microservicio-Notificaciones:latest"
+                    sh "docker build -t ${dockerImageTag} -f Dockerfile ."
                 }
             }
         }
@@ -83,7 +62,7 @@ pipeline {
         stage('Trivy Vulnerability Scan') {
             steps {
                 script {
-                    def dockerImageTag = "jsebas656/estudio-cine:latest"
+                    def dockerImageTag = "jsebas656/Microservicio-Notificaciones:latest"
                     sh """
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
@@ -95,12 +74,10 @@ pipeline {
             }
         }
 
-
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    def dockerImageTag = "jsebas656/Microservicios-Notificaciones:latest"
+                    def dockerImageTag = "jsebas656/Microservicio-Notificaciones:latest"
                     docker.withRegistry('https://index.docker.io/v1/', 'docker-credenciales') {
                         sh "docker push ${dockerImageTag}"
                     }
