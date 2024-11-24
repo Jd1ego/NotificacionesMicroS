@@ -1,0 +1,117 @@
+pipeline {
+    agent any
+
+    tools {
+        gradle 'GRADLE'
+        dockerTool 'Docker'
+    }
+
+    stages {
+        stage('Clone and Checkout Latest Commit') {
+            steps {
+                git branch: 'develop', url: 'https://github.com/Jd1ego/EstudioCine'
+                sh 'git fetch --all'
+                sh 'git reset --hard origin/develop'
+            }
+        }
+
+        stage('Prevent Direct Commit to Master') {
+            when {
+                branch 'master'
+            }
+            steps {
+                error 'No se permite realizar commits directamente sobre la rama master'
+            }
+        }
+
+        stage('Set Permissions') {
+            steps {
+                dir('Back/cine_back') {
+                    sh 'chmod +x gradlew'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                dir('Back/cine_back') {
+                    sh './gradlew test'
+                }
+            }
+        }
+
+        stage('Generate JaCoCo Report') {
+            steps {
+                dir('Back/cine_back') {
+                    sh './gradlew jacocoTestReport'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('Sonarqube') {
+                    dir('Back/cine_back') {
+                        sh './gradlew sonarqube -Dsonar.login=squ_03fbd8f33a42c91fe9fe31f18470bcb7fdda181c'
+                    }
+                }
+            }
+        }
+
+        /*
+        stage('Sonar Quality Gate') {
+            steps {
+                script {
+                    def qualityGateResult = waitForQualityGate()
+                    if (qualityGateResult.status != 'OK') {
+                        error "Quality Gate failed: ${qualityGateResult.status}"
+                    }
+                }
+            }
+        }
+        */
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def dockerImageTag = "jsebas656/estudio-cine:latest" // Etiqueta de la imagen
+                    sh "docker build -t ${dockerImageTag} -f Back/cine_back/Dockerfile Back/cine_back"
+                }
+            }
+        }
+
+        stage('Trivy Vulnerability Scan') {
+            steps {
+                script {
+                    def dockerImageTag = "jsebas656/estudio-cine:latest"
+                    sh """
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v $HOME/Library/Caches:/root/.cache/ \
+                      aquasec/trivy image --severity HIGH,CRITICAL \
+                      ${dockerImageTag}
+                    """
+                }
+            }
+        }
+
+
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    def dockerImageTag = "jsebas656/estudio-cine:latest"
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-credenciales') {
+                        sh "docker push ${dockerImageTag}"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit '**/build/test-results/test/*.xml'
+        }
+    }
+}
