@@ -9,9 +9,9 @@ pipeline {
     stages {
         stage('Clone and Checkout Latest Commit') {
             steps {
-                git branch: 'develop', url: 'https://github.com/Jd1ego/EstudioCine'
+                git branch: 'develop', url: 'https://github.com/Jd1ego/NotificacionesMicroS'
                 sh 'git fetch --all'
-                sh 'git reset --hard origin/develop'
+                sh 'git reset --hard origin/main'
             }
         }
 
@@ -26,34 +26,34 @@ pipeline {
 
         stage('Set Permissions') {
             steps {
-                dir('Back/cine_back') {
+                
                     sh 'chmod +x gradlew'
-                }
+                
             }
         }
 
         stage('Run Tests') {
             steps {
-                dir('Back/cine_back') {
+                
                     sh './gradlew test'
-                }
+                
             }
         }
 
         stage('Generate JaCoCo Report') {
             steps {
-                dir('Back/cine_back') {
+                
                     sh './gradlew jacocoTestReport'
-                }
+                
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('Sonarqube') {
-                    dir('Back/cine_back') {
+                    
                         sh './gradlew sonarqube -Dsonar.login=squ_03fbd8f33a42c91fe9fe31f18470bcb7fdda181c'
-                    }
+                    
                 }
             }
         }
@@ -74,8 +74,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def dockerImageTag = "jsebas656/estudio-cine:latest" // Etiqueta de la imagen
-                    sh "docker build -t ${dockerImageTag} -f Back/cine_back/Dockerfile Back/cine_back"
+                    def dockerImageTag = "jsebas656/Microservicio-Notificaciones:latest" 
+                    sh "docker build -t ${dockerImageTag} -f "
                 }
             }
         }
@@ -100,7 +100,7 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    def dockerImageTag = "jsebas656/estudio-cine:latest"
+                    def dockerImageTag = "jsebas656/Microservicios-Notificaciones:latest"
                     docker.withRegistry('https://index.docker.io/v1/', 'docker-credenciales') {
                         sh "docker push ${dockerImageTag}"
                     }
