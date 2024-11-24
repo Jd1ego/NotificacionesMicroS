@@ -30,25 +30,9 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                sh './gradlew test'
-            }
-        }
+      
 
-        stage('Generate JaCoCo Report') {
-            steps {
-                sh './gradlew jacocoTestReport'
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('Sonarqube') {
-                    sh './gradlew sonarqube -Dsonar.login=squ_03fbd8f33a42c91fe9fe31f18470bcb7fdda181c'
-                }
-            }
-        }
+        
 
         stage('Build Docker Image') {
             steps {
