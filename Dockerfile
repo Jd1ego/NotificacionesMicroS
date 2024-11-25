@@ -4,7 +4,7 @@ LABEL authors="sebas"
 
 WORKDIR /app
 
-COPY target/microservicio-notificaciones-0.0.1-SNAPSHOT.jar app.jar
+COPY *.jar app.jar
 
 EXPOSE 8082
 
